@@ -70,7 +70,7 @@ def view_ppo2():
             action, _states = model.predict(obs)
             obs, rewards, dones, info = env.step(action)
             r += rewards
-            env.render()
+            #env.render()
             if dones:
                 if r > -100:
                     success_rate += 1

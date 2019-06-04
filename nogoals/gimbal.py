@@ -159,7 +159,7 @@ class gimbal:
     def get_goal(self):
         return self.initial_goal
     def _get_obs(self):
-        angles = self.data.sensordata[0:2] % (2 * np.pi)
+        #angles = self.data.sensordata[0:2] % (2 * np.pi)
         dist = np.linalg.norm(self.XZ)
         XZ_angle = self.XZ_angle_posX()
         vec_a = [-1 - self.XZ[0], 1 - self.XZ[1]]
