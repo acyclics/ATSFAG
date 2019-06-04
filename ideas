@@ -1,0 +1,26 @@
+Training:
+1. If not see object, give very negative reward. If see object on screen, give -1, give 0 if detected.
+2. Map from angles to coordinate on screen, track dot like robot arms.
+3. Dynamic HER
+4. Find better algos / implementation
+5. Imitation learning first
+6. Before applying Memory to train ddpg, check if there's any good rewards in memory. If not, discard then regain experience. 
+Also, could try always keeping some good experience in memory.
+
+Reward ideas:
+1. If pixel is around edge of camera screen, give some negative reward to encourage moving it closer to center
+2. Exponential increase with distance to encourage closer to pixel
+3. Rescale distance reward to suit speed control
+4. Angle projection negative reward to guide it along the most direct path
+5. Determine most direct direction / path to target, then give negative reward for deviating from path
+6. Circle around point so as have a region of negative reward (discourage approach to edge)
+
+State ideas:
+1. Add more sensors like velocimeter to head of barrel etc
+2. Directions to target, angles, signs, etc
+3. Distance and vectors to corners (check)
+
+Action ideas:
+1. Use direction control instead of speed control. Or, use both direction and speed control via a factor
+2. Lower the range of control to smaller values etc / change up the standard deviation to suit the control range
+3. Give more range to second motor + increase variance (from 5 to 10) (check)
