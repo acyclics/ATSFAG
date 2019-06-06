@@ -1,0 +1,120 @@
+<mujoco>
+
+    <compiler coordinate="local" angle="degree" inertiafromgeom="auto"/>
+
+    <option timestep="0.0005" apirate="100" wind="0 0 0" density="1.2" viscosity="0" cone="elliptic">
+        <flag sensornoise="enable"/>
+    </option>
+
+    <worldbody>
+
+        <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
+        <!--geom type="plane" pos="0 0 -0.325" size="1 1 0.1" contype="1" conaffinity="1"/-->
+
+        <body name="base" pos="0 0 0">
+            <geom type="cylinder" condim="6" size="0.03 0.02" friction="1 0.005 0.0001"/>
+            <body name="frame" pos="0 0 0.0215">
+                <geom name="bottom" type="box" condim="3" size="0.05 0.03 0.0015" friction="1 0.005 0.0001"/>
+
+                <body name="right" pos="0.05 0 0.05">
+                    <geom name="rside" type="box" condim="3" size="0.0015 0.03 0.05" friction="1 0.005 0.0001"/>
+                    <geom name="rtop_slope" type="box" condim="3" pos="0.0106 0 0.0606" size="0.0015 0.03 0.015" euler="0 45 0" friction="1 0.005 0.0001"/>
+
+                    <body name="rtop_platform" pos="0.0212 0 0.0712">
+                        <geom name="rstand" type="box" condim="3" pos="0 0 0.015" size="0.0015 0.03 0.015" friction="1 0.005 0.0001"/>
+                        <geom name="rcircle" type="cylinder" condim="3" pos="0 0 0.03" size="0.03 0.0015" euler="0 90 0" friction="1 0.005 0.0001"/>
+
+                        <body name="gun_platform" pos="0 0 0.045">
+                            <geom type="cylinder" condim="3" pos="0.0227 0 0" size="0.03 0.02" euler="0 90 0" friction="1 0.005 0.0001"/>
+
+                            <body name="gun" pos="0 0 0">
+                                <geom name="rotating_platform" type="box" condim="3" pos="-0.0712 -0.0015 0" size="0.0712 0.0370 0.0015" friction="1 0.005 0.0001"/>
+                                
+                                <body name="rod" pos="-0.0712 0 0">
+                                    <body name="bullet_holder" pos="0 0 0.0475">
+                                        <geom name="frontSide" type="box" condim="3" size="0.0670 0.0005 0.03" friction="1 0.005 0.0001"/>
+                                        <geom name="rightSide" type="box" condim="3" pos="0.0670 -0.0670 0" size="0.0005 0.0670 0.03" friction="1 0.005 0.0001"/>
+                                        <geom name="leftSide" type="box" condim="3" pos="-0.0670 -0.0670 0" size="0.0005 0.0670 0.03" friction="1 0.005 0.0001"/>
+                                        <geom name="rearSide" type="box" condim="3" pos="0 -0.1340 0" size="0.0670 0.0005 0.03" friction="1 0.005 0.0001"/>
+                                        <geom name="bottomFront" type="box" condim="3" pos="0 -0.0200 -0.03" size="0.0670 0.0200 0.0005" friction="1 0.005 0.0001"/>
+                                        <geom name="bottomRear" type="box" condim="3" pos="0 -0.1140 -0.03" size="0.0670 0.0200 0.0005" friction="1 0.005 0.0001"/>
+                                        <geom name="bottomRight" type="box" condim="3" pos="0.0470 -0.0670 -0.03" size="0.0200 0.0270 0.0005" friction="1 0.005 0.0001"/>
+                                        <geom name="bottomLeft" type="box" condim="3" pos="-0.0470 -0.0670 -0.03" size="0.0200 0.0270 0.0005" friction="1 0.005 0.0001"/>
+                                        
+                                        <body name="bullet_feeder" pos="0 -0.0670 -0.03">
+                                            <geom name="frontSide_bf" type="box" condim="3" pos="0 0.0290 -0.0100" size="0.0270 0.0035 0.0100" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
+                                            <geom name="rightSide_bf" type="box" condim="3" pos="0.0310 0 -0.0250" size="0.0055 0.0270 0.0250" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
+                                            <geom name="leftSide_bf" type="box" condim="3" pos="-0.0310 0 -0.0250" size="0.0055 0.0270 0.0250" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
+                                            <geom name="rearSide_bf" type="box" condim="3" pos="0 -0.0340 -0.0250" size="0.0365 0.0085 0.0250" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
+                                            <geom name="bottom_bf" type="box" condim="3" pos="0 0 -0.0520" size="0.0270 0.0270 0.0035" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
+                                            
+                                            <body name="barrel" pos="0 0.0270 -0.0350">
+                                                <geom name="bottom_barrel" type="box" condim="3" pos="0 0.0600 -0.0150" size="0.015 0.0600 0.0015" friction="1 0.005 0.0001"/>
+                                                <geom name="top_barrel" type="box" condim="3" pos="0 0.0600 0.0150" size="0.015 0.0600 0.0015" friction="1 0.005 0.0001"/>
+                                                <geom name="right_barrel" type="box" condim="3" pos="0.0150 0.0600 0" size="0.0015 0.0600 0.015" friction="1 0.005 0.0001"/>
+                                                <geom name="left_barrel" type="box" condim="3" pos="-0.0150 0.0600 0" size="0.0015 0.0600 0.015" friction="1 0.005 0.0001"/>
+
+                                                <body name="shooting_mechanism" pos="0 0.0200 0">
+                                                    <geom name="connector_right" type="box" condim="3" pos="0.0210 0 0" size="0.006 0.0200 0.015" friction="1 0.005 0.0001"/>
+                                                    <geom name="connector_left" type="box" condim="3" pos="-0.0210 0 0" size="0.006 0.0200 0.015" friction="1 0.005 0.0001"/>
+
+                                                    <body name="rFriction_wheels" pos="0.0260 0 0">
+                                                        <geom name="rightWheel" type="cylinder" condim="3" size="0.02 0.005" friction="5 0.01 0.01"/>
+                                                        <joint name="rFricWheel" axis="0 0 1" limited="false" damping=".05"/>
+                                                    </body>
+
+                                                    <body name="lFriction_wheels" pos="-0.0260 0 0">
+                                                        <geom name="lFricWheel" type="cylinder" condim="3" size="0.02 0.005" friction="5 0.01 0.001"/>
+                                                        <joint name="lFricWheel" axis="0 0 1" limited="false" damping=".05"/>
+                                                    </body>
+                                                </body>
+
+                                                <body name="head_of_barrel" pos="0 0.12 0">
+                                                    <site name="devices" type="cylinder" size="0.005 0.010" euler="-90 0 0"/>
+                                                </body>
+
+                                                <body name="camera" pos="0 0.12 0">
+                                                    <camera name="cam1" mode="fixed" euler="90 0 0" pos="0 0 0"/>
+                                                </body>
+
+                                            </body>
+
+                                            <body name="reloading_wheel" pos="0 0 -0.0380">
+                                                <geom name="reloadWheel" type="cylinder" condim="3" size="0.005 0.0150" friction="5 0.01 0.01"/>
+                                                <geom name="stick1" type="capsule" condim="3" size="0.006 0.0200" euler="0 90 0" friction="5 0.01 0.01"/>
+                                                <geom name="stick2" type="capsule" condim="3" size="0.006 0.0200" euler="90 0 0" friction="5 0.01 0.01"/>
+                                                <geom name="stick3" type="capsule" condim="3" size="0.005 0.0070" euler="90 45 0" friction="5 0.01 0.01"/>
+                                                <geom name="stick4" type="capsule" condim="3" size="0.005 0.0070" euler="90 135 0" friction="5 0.01 0.01"/>
+                                                <joint name="reloadMotor" axis="0 0 1" limited="false" damping=".05"/>
+                                            </body>
+
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+
+                <body name="left" pos="-0.05 0 0.05">
+                    <geom name="lside" type="box" condim="3" size="0.0015 0.03 0.05" friction="1 0.005 0.0001"/>
+                    <geom name="ltop_slope" type="box" condim="3" pos="-0.0106 0 0.0606" size="0.0015 0.03 0.015" euler="0 -45 0" friction="1 0.005 0.0001"/>
+
+                    <body name="ltop_platform" pos="-0.0212 0 0.0712">
+                        <geom name="lstand" type="box" condim="3" pos="0 0 0.015" size="0.0015 0.03 0.015" friction="1 0.005 0.0001"/>
+                        <geom name="lcircle" type="cylinder" condim="3" pos="0 0 0.03" size="0.03 0.0015" euler="0 90 0" friction="1 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+        </body>
+        
+
+        <body name="target" pos="0 1.5 0.1">
+            <geom rgba="1 0 0 1" type="cylinder" size="0.1 0.005" euler="90 0 0" contype="1" conaffinity="1" mass="1"/>
+            <joint name="target_slidez" type="slide" pos="0 0 0" axis="0 0 1" damping="0"/>
+            <joint name="target_slidey" type="slide" pos="0 0 0" axis="0 1 0" damping="0"/>
+            <joint name="target_slidex" type="slide" pos="0 0 0" axis="1 0 0" damping="0"/>
+        </body>
+
+    </worldbody>
+</mujoco>

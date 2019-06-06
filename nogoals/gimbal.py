@@ -4,6 +4,7 @@ import cv2
 from gym.utils import seeding
 from gym import spaces
 import os
+import keyboard
 
 # CHANGABLE VARIABLES
 DEFAULT_SIZE = 200
@@ -11,13 +12,15 @@ DEFAULT_SIZE = 200
 class gimbal:
     ''' Mujoco initialization '''
     def __init__(self, frame_skip, MAX_timestep, rgb_rendering_tracking=True):
-         # Model specific
+         # Mujoco specific
         xml_path = 'gimbal.xml'
         self.model = mjpy.load_model_from_path(xml_path)
         self.sim = mjpy.MjSim(self.model)
         self.rgb_rendering_tracking = rgb_rendering_tracking
+        # Camera
         self.initCam1(500, 500)
-        # Data specific
+        self.cam1 = [0, 0 ,0]
+        # Model specific
         self.frame_skip = frame_skip
         self.data = self.sim.data
         self.init_qpos = self.sim.data.qpos.ravel().copy()
@@ -29,7 +32,8 @@ class gimbal:
             'render.modes': ['human', 'rgb_array', 'depth_array'],
             'video.frames_per_second': int(np.round(1.0 / self.dt))
         }
-        self.obs_dim = 10
+        # Data specific
+        self.obs_dim = 6
         bounds = self.model.actuator_ctrlrange.copy()
         low = bounds[:, 0]
         high = bounds[:, 1]
@@ -39,9 +43,15 @@ class gimbal:
         self.observation_space = spaces.Box(low, high, dtype=np.float32)
         self.timestep = 0
         self.MAX_timestep = MAX_timestep
-        self.cam1 = [0, 0 ,0]
+        # Control specific
         self.integratedError0 = 0
         self.integratedError1 = 0
+        self.p0 = 0.3
+        self.p1 = 0.3
+        self.i0 = 0.1
+        self.i1 = 0.1
+        # Dynamic randomization specific
+        self.storeInitParams()
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -50,12 +60,8 @@ class gimbal:
 
 
 
-    ''' Model upper-level '''
+    ''' Model functions '''
     def pid_control(self, a):
-        p0 = 0.3
-        p1 = 0.3
-        i0 = 0.1
-        i1 = 0.1
         error0 = a[0] - self.sim.data.qvel[0]
         error1 = a[1] - self.sim.data.qvel[1]
         if error0 == 0:
@@ -66,18 +72,7 @@ class gimbal:
             self.integratedError1 = 0
         else:
             self.integratedError1 += error1
-        return [p0 * error0 + i0 * self.integratedError0, p1 * error1 + i1 * self.integratedError1]
-    def findPixel_nonzero(self):
-        img = self.getCam1Data()
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        pt = cv2.findNonZero(gray)
-        if pt is None:
-            return [-self.cam1_w, 0]
-        else:
-            pt[0][0][0] = pt[0][0][0] - self.cam1_w/2
-            pt[0][0][1] = self.cam1_h/2 - pt[0][0][1]
-            norm_pt = [pt[0][0][0] / (self.cam1_w/2), pt[0][0][1] / (self.cam1_h/2)]
-            return norm_pt
+        return [self.p0 * error0 + self.i0 * self.integratedError0, self.p1 * error1 + self.i1 * self.integratedError1]
     def findPixel_centroid(self):
         img = self.getCam1Data()
         gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -110,6 +105,48 @@ class gimbal:
             return np.pi + np.arctan(self.XZ[1] / self.XZ[0])
         elif self.XZ[0] > 0 and self.XZ[1] < 0:
             return 2.0 * np.pi + np.arctan(self.XZ[1] / self.XZ[0])
+    ''' END '''
+
+
+
+
+    ''' Model dynamic randomization '''
+    def storeInitParams(self):
+        self.initParams = [
+            self.frame_skip,                                                # frame skip
+            self.p0,                                                        # motor0 p of pid
+            self.p1,                                                        # motor1 p of pid
+            self.i0,                                                        # motor0 i of pid
+            self.i1,                                                        # motor1 i of pid
+            self.model.body_pos[15],                                        # position of camera
+            self.model.body_mass[10],                                       # mass of barrel
+            self.model.jnt_stiffness[0],                                    # stiffness of "motor1" joint
+            self.model.jnt_stiffness[1],                                    # stiffness of "motor2" joint
+            self.model.dof_frictionloss[0],                                 # frictionloss of "motor1" joint
+            self.model.dof_frictionloss[1],                                 # frictionloss of "motor2" joint
+            self.model.dof_damping[0],                                      # damping of "motor1" joint
+            self.model.dof_damping[1],                                      # damping of "motor2" joint
+        ]
+    def dRandomize(self):
+        self.frame_skip = np.random.randint(low=1, high=10)
+        self.p0 = np.random.uniform(low=0.5, high=2) * self.initParams[1]
+        self.p1 = np.random.uniform(low=0.5, high=2) * self.initParams[2]
+        self.i0 = np.random.uniform(low=0.5, high=2) * self.initParams[3]
+        self.i1 = np.random.uniform(low=0.5, high=2) * self.initParams[4]
+        self.model.body_pos[15] = [0., np.random.uniform(low=0.10, high=0.20), 0.]
+        self.model.body_mass[10] = np.random.uniform(low=0.01, high=0.10)
+        self.model.jnt_stiffness[0] = np.random.uniform(low=0, high=0.10)
+        self.model.jnt_stiffness[1] = np.random.uniform(low=0, high=0.10)
+        self.model.dof_frictionloss[0] = np.random.uniform(low=0, high=0.10)
+        self.model.dof_frictionloss[1] = np.random.uniform(low=0, high=0.10)
+        self.model.dof_damping[0] = np.random.uniform(low=0, high=0.10)
+        self.model.dof_damping[1] = np.random.uniform(low=0, high=0.10)
+    ''' END '''
+
+
+
+
+    ''' Model upper-level '''
     def step(self, a):
         done, reward = self.reward_func(0, 0, 0)
         action = self.pid_control(a)
@@ -126,7 +163,6 @@ class gimbal:
     def reward_func(self, state, goal, goal_info):
         self.XZ = self.findPixel_centroid()
         if isinstance(state, int):
-            #self.data.sensordata[2] >= 0:
             eps = 0.01
             dist = np.linalg.norm(self.XZ)
             if self.XZ[0] == -self.cam1_w and self.XZ[1] == 0:
@@ -147,19 +183,18 @@ class gimbal:
         x: -0.50 to 0.68
         z: -0.50 to 0.68
         '''
-        qpos[-2] = np.random.uniform(low=-0.1, high=0.5)
-        qpos[-1] = np.random.uniform(low=-0.5, high=0.5)
-        #qvel[-1] = np.random.uniform(low=-5, high=5)
-        #qvel[-2] = np.random.uniform(low=0, high=5)
+        qpos[-2] = np.random.uniform(low=-0.1, high=0.2)
+        qpos[-1] = np.random.uniform(low=-0.5, high=0.2)
+        qvel[-1] = np.random.uniform(low=-5, high=5)
+        qvel[-2] = np.random.uniform(low=0, high=3)
         self.set_state(qpos, qvel)
         self.sim.data.qfrc_applied[-2] = self.sim.data.qfrc_bias[-2]    # no gravity for target
+        #self.dRandomize()
         self.XZ = self.findPixel_centroid()
-        self.initial_goal = self.XZ
         return self._get_obs()
-    def get_goal(self):
-        return self.initial_goal
     def _get_obs(self):
-        #angles = self.data.sensordata[0:2] % (2 * np.pi)
+        #angular = [np.random.normal(self.sim.data.qvel[0], 0.005), np.random.normal(self.sim.data.qvel[1], 0.005)]  # noise
+        angular = self.sim.data.qvel[0:2]
         dist = np.linalg.norm(self.XZ)
         XZ_angle = self.XZ_angle_posX()
         vec_a = [-1 - self.XZ[0], 1 - self.XZ[1]]
@@ -167,10 +202,10 @@ class gimbal:
         vec_c = [-1 - self.XZ[0], -1 - self.XZ[1]]
         vec_d = [1 - self.XZ[0], -1 - self.XZ[1]]
         return np.concatenate([
-            #angles,
-            self.sim.data.qvel[0:2],
+            angular,
             self.XZ,
-            [XZ_angle, dist, np.linalg.norm(vec_a), np.linalg.norm(vec_b), np.linalg.norm(vec_c), np.linalg.norm(vec_d)]
+            [XZ_angle, dist]
+            #[XZ_angle, dist, np.linalg.norm(vec_a), np.linalg.norm(vec_b), np.linalg.norm(vec_c), np.linalg.norm(vec_d)]
         ])
     ''' END '''
 
@@ -247,3 +282,42 @@ class gimbal:
             self.sim.data.qvel.flat
         ])
     ''' END '''
+
+
+
+
+    ''' Target control suite '''
+    def target_up(self):
+        self.sim.data.qvel[-2] = 2
+    def target_down(self):
+        self.sim.data.qvel[-2] = -2
+    def target_left(self):
+        self.sim.data.qvel[-1] = -2
+    def target_right(self):
+        self.sim.data.qvel[-1] = 2
+    def target_ctrl(self):
+        if keyboard.is_pressed('up'):
+            self.target_up()
+        elif keyboard.is_pressed('down'):
+            self.target_down()
+        else:
+            self.sim.data.qvel[-2] = 0
+        if keyboard.is_pressed('left'):
+            self.target_left()
+        elif keyboard.is_pressed('right'):
+            self.target_right()
+        else:
+            self.sim.data.qvel[-1] = 0
+    ''' END '''
+
+'''
+Mujoco info (http://mujoco.org/book/APIreference.html#tyPrimitive)
+In general, stuff are ordered by the order they were initialzied in XML
+
+BODY
+self.model.body_pos[15] = "name='camera'"
+self.model.body_mass[10] = "name='barrel'"
+
+GEOM
+self.model.geom_size[0] = "name='base'" -> geom(Cylinder)
+'''

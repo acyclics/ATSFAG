@@ -1,0 +1,124 @@
+<mujoco>
+
+    <compiler coordinate="local" angle="degree" inertiafromgeom="auto"/>
+
+    <option timestep="0.0005" apirate="100" wind="0 0 0" density="1.2" viscosity="0" cone="elliptic">
+        <flag sensornoise="enable"/>
+    </option>
+
+    <worldbody>
+
+        <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
+        <geom type="plane" pos="0 0 -0.325" size="1 1 0.1" contype="1" conaffinity="1"/>
+
+        <body name="base" pos="0 0 0">
+            <geom type="cylinder" condim="6" size="0.03 0.02" friction="1 0.005 0.0001"/>
+            <body name="frame" pos="0 0 0.0215">
+                <geom name="bottom" type="box" condim="3" size="0.05 0.03 0.0015" friction="1 0.005 0.0001"/>
+
+                <body name="right" pos="0.05 0 0.05">
+                    <geom name="rside" type="box" condim="3" size="0.0015 0.03 0.05" friction="1 0.005 0.0001"/>
+                    <geom name="rtop_slope" type="box" condim="3" pos="0.0106 0 0.0606" size="0.0015 0.03 0.015" euler="0 45 0" friction="1 0.005 0.0001"/>
+
+                    <body name="rtop_platform" pos="0.0212 0 0.0712">
+                        <geom name="rstand" type="box" condim="3" pos="0 0 0.015" size="0.0015 0.03 0.015" friction="1 0.005 0.0001"/>
+                        <geom name="rcircle" type="cylinder" condim="3" pos="0 0 0.03" size="0.03 0.0015" euler="0 90 0" friction="1 0.005 0.0001"/>
+
+                        <body name="gun_platform" pos="0 0 0.045">
+                            <geom type="cylinder" condim="3" pos="0.0227 0 0" size="0.03 0.02" euler="0 90 0" friction="1 0.005 0.0001"/>
+                            <joint name="motor2" axis="1 0 0" limited="true" range="0 45" stiffness="0.01" frictionloss="0.01" damping=".06"/>
+
+                            <body name="gun" pos="0 0 0">
+                                <geom name="rotating_platform" type="box" condim="3" pos="-0.0712 -0.0015 0" size="0.0712 0.0370 0.0015" friction="1 0.005 0.0001"/>
+                                
+                                <body name="rod" pos="-0.0712 0 0">
+                                    <body name="bullet_holder" pos="0 0 0.0475">
+                                        <geom type="box" condim="3" pos="0 -0.090 0.10400" size="0.0150 0.0010 0.0900" euler="30 0 0" contype="1" conaffinity="1"/>
+                                        <geom type="box" condim="3" pos="0 -0.080 0.12" size="0.0150 0.0015 0.0800" euler="30 0 0" contype="1" conaffinity="1"/>
+                                        <body name="bullet_feeder" pos="0 -0.0670 -0.03"> 
+                                            <body name="barrel" pos="0 0.0270 -0.0350">
+                                                <geom name="bottom_barrel" type="box" condim="3" pos="0 0.120 -0.016" size="0.015 0.200 0.006" friction="0 0 0"/>
+                                                <geom name="top_barrel" type="box" condim="3" pos="0 0.1200 0.016" size="0.015 0.200 0.006" friction="0 0 0"/>
+                                                <geom name="right_barrel" type="box" condim="3" pos="0.0120 0.1200 0" size="0.0015 0.200 0.015" friction="0 0 0"/>
+                                                <geom name="left_barrel" type="box" condim="3" pos="-0.0120 0.1200 0" size="0.0015 0.200 0.015" friction="0 0 0"/>
+                                                <!--geom name="bottom_barrel" type="box" condim="3" pos="0 0.0600 -0.0165" size="0.015 0.100 0.0050" friction="1 0.005 0.0001"/>
+                                                <geom name="top_barrel" type="box" condim="3" pos="0 0.0600 0.0165" size="0.015 0.100 0.0050" friction="1 0.005 0.0001"/>
+                                                <geom name="right_barrel" type="box" condim="3" pos="0.0150 0.0600 0" size="0.0015 0.100 0.015" friction="1 0.005 0.0001"/>
+                                                <geom name="left_barrel" type="box" condim="3" pos="-0.0150 0.0600 0" size="0.0015 0.100 0.015" friction="1 0.005 0.0001"/-->
+
+                                                <body name="shooting_mechanism" pos="0 0.0500 0">
+                                                    <geom name="connector_right" type="box" condim="3" pos="0.0210 0 0" size="0.006 0.0200 0.015" friction="1 0.005 0.0001"/>
+                                                    <geom name="connector_left" type="box" condim="3" pos="-0.0210 0 0" size="0.006 0.0200 0.015" friction="1 0.005 0.0001"/>
+
+                                                    <body name="rFriction_wheels" pos="0.0250 0 0">
+                                                        <geom name="rightWheel" type="cylinder" condim="3" size="0.02 0.015" friction="5 0.01 0.01"/>
+                                                        <joint name="rFricWheel" axis="0 0 1" limited="false" damping=".05"/>
+                                                    </body>
+
+                                                    <body name="lFriction_wheels" pos="-0.0250 0 0">
+                                                        <geom name="lFricWheel" type="cylinder" condim="3" size="0.02 0.015" friction="5 0.01 0.001"/>
+                                                        <joint name="lFricWheel" axis="0 0 1" limited="false" damping=".05"/>
+                                                    </body>
+
+                                                    <body name="bullet_pos" pos="0 -0.033 0.035">
+                                                        <geom type="cylinder" pos="0 0.005 -0.03" size="0.005 0.015"/>
+                                                    </body>
+                                                </body>
+
+                                                <body name="camera" pos="0 0.12 0.1">
+                                                    <camera name="cam1" mode="fixed" euler="90 0 0" pos="0 0 0"/>
+                                                </body>
+
+                                            </body>
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+
+                <body name="left" pos="-0.05 0 0.05">
+                    <geom name="lside" type="box" condim="3" size="0.0015 0.03 0.05" friction="1 0.005 0.0001"/>
+                    <geom name="ltop_slope" type="box" condim="3" pos="-0.0106 0 0.0606" size="0.0015 0.03 0.015" euler="0 -45 0" friction="1 0.005 0.0001"/>
+
+                    <body name="ltop_platform" pos="-0.0212 0 0.0712">
+                        <geom name="lstand" type="box" condim="3" pos="0 0 0.015" size="0.0015 0.03 0.015" friction="1 0.005 0.0001"/>
+                        <geom name="lcircle" type="cylinder" condim="3" pos="0 0 0.03" size="0.03 0.0015" euler="0 90 0" friction="1 0.005 0.0001"/>
+                    </body>
+                </body>
+              
+                <joint name="motor1" axis="0 0 1" limited="true" range="-45 45" stiffness="0.01" frictionloss="0.01" damping=".06"/>
+            </body>
+        </body>
+
+        <body name="bullet" pos="0 0 0">
+            <geom type="sphere" size="0.009" mass="0.008" contype="1" conaffinity="1"/>
+            <joint type="slide" pos="0 0 0" axis="1 0 1"/>
+            <joint type="slide" pos="0 0 0" axis="0 1 1"/>
+            <joint type="slide" pos="0 0 0" axis="0 0 1"/>
+        </body>
+
+        <body name="target" pos="0 1 0.1">
+            <site name="detection" rgba="1 0 0 1" type="cylinder" size="0.1 0.005" euler="90 0 0"/>
+            <geom rgba="1 0 0 1" type="cylinder" size="0.1 0.005" euler="90 0 0" contype="1" conaffinity="1" mass="1"/>
+            <joint name="target_slidez" type="slide" pos="0 0 0" axis="0 0 1" range="-10.3213 10.3" damping="1.0"/>
+            <joint name="target_slidex" type="slide" pos="0 0 0" axis="1 0 0" range="-10.3213 10.3" damping="1.0"/>
+        </body>
+
+    </worldbody>
+
+    <actuator>
+        <velocity joint="motor1" gear="1" forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-20 20"/>
+        <velocity joint="motor2" gear="1" forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-10 10"/>
+        <velocity joint="lFricWheel" gear="1" forcelimited="true" forcerange="399 400" ctrllimited="true" ctrlrange="0 20"/>
+        <velocity joint="rFricWheel" gear="1" forcelimited="true" forcerange="-400 -399" ctrllimited="true" ctrlrange="0 20"/>
+    </actuator>
+
+    <sensor>
+        <jointpos name="motor1_encoder" joint="motor1" noise="0.001"/>
+        <jointpos name="motor2_encoder" joint="motor2" noise="0.001"/>
+        <touch name="bulletDetect" site="detection"/>
+    </sensor>
+
+</mujoco>

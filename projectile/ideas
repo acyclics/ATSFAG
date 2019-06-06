@@ -1,0 +1,5 @@
+Method 1: Object's center would be origin. Model specifies where in that frame it should aim at.
+    -> sub method 1: allow one bullet, let model decide timings
+    -> sub method 2: allow infinite bullets, fired every timestep etc, maximize hit rate. Let model control speed of motors
+
+Method 2: Have 2 models, one to aim, one to predict, and combine the two to shoot
