@@ -32,7 +32,7 @@ class gimbal:
             'video.frames_per_second': int(np.round(1.0 / self.dt))
         }
         # Data specific
-        self.obs_dim = 6
+        self.obs_dim = 10
         low = -1.0
         high = 1.0
         self.action_space = spaces.Box(low=low, high=high, shape=(2,), dtype=np.float32)
@@ -57,18 +57,6 @@ class gimbal:
 
 
     ''' Model functions '''
-    def pid_control(self, a):
-        error0 = a[0] - self.sim.data.qvel[0]
-        error1 = a[1] - self.sim.data.qvel[1]
-        if error0 == 0:
-            self.integratedError0 = 0
-        else:
-            self.integratedError0 += error0
-        if error1 == 0:
-            self.integratedError1 = 0
-        else:
-            self.integratedError1 += error1
-        return [self.p0 * error0 + self.i0 * self.integratedError0, self.p1 * error1 + self.i1 * self.integratedError1]
     def findPixel_centroid(self):
         img = self.getCam1Data()
         gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -115,15 +103,21 @@ class gimbal:
         self.do_simulation(self.frame_skip)
         self.timestep += 1
         ob = self._get_obs()
+        self.forward_timestep(20)
         if self.timestep >= self.MAX_timestep:
             done = True
         return ob, reward, done, dict(goal=0)
     def reward_func(self, prediction):
-        self.forward_timestep(20)
         self.XZ = self.findPixel_centroid()
+        img = self.getCam1Data()
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        x = int((prediction[0] * (self.cam1_w/2)) + (self.cam1_w/2.0))
+        z =  int((self.cam1_h/2.0) - (prediction[1] * (self.cam1_h/2)))
+        cv2.circle(img,(min(499, x), min(499, z)), 10, (255,0,0), -1)
+        cv2.imshow("Image", img)
         reward = -np.linalg.norm([self.XZ[0] - prediction[0], self.XZ[1] - prediction[1]])
         if self.XZ[0] == -self.cam1_w and self.XZ[1] == 0:
-            return True, reward
+            return True, 0
         else:
             return False, reward
     def viewer_setup(self):
@@ -156,8 +150,8 @@ class gimbal:
         return np.concatenate([
             self.XZ,
             [self.sim.data.qvel[-1], self.sim.data.qvel[-3]],
-            [XZ_angle, dist]
-            #[XZ_angle, dist, np.linalg.norm(vec_a), np.linalg.norm(vec_b), np.linalg.norm(vec_c), np.linalg.norm(vec_d)]
+            [XZ_angle, dist],
+            [np.linalg.norm(vec_a), np.linalg.norm(vec_b), np.linalg.norm(vec_c), np.linalg.norm(vec_d)]
         ])
     ''' END '''
 

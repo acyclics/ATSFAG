@@ -52,6 +52,9 @@ class gimbal:
         self.i1 = 0.1
         # Dynamic randomization specific
         self.storeInitParams()
+        # Annealing
+        self.gamma = 1.0
+        self.decay = 0.98
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -165,17 +168,24 @@ class gimbal:
         if isinstance(state, int):
             eps = 0.01
             dist = np.linalg.norm(self.XZ)
-            if self.XZ[0] == -self.cam1_w and self.XZ[1] == 0:
-                return True, -100000
-            elif dist <= eps:
-                return True, 0
+            if self.gamma != 0:
+                if self.XZ[0] == -self.cam1_w and self.XZ[1] == 0:
+                    return True, -100000
+                elif dist <= eps:
+                    return True, 0
+                else:
+                    return False, -dist
             else:
-                return False, -dist
+                if dist <= eps:
+                    return True, 0
+                else:
+                    return False, -1
     def viewer_setup(self):
         self.viewer.cam.trackbodyid = 0
         self.viewer.cam.distance = 3.0
     def reset_model(self):
         self.timestep = 0
+        self.gamma *= self.decay
         qpos = self.init_qpos
         qvel = self.init_qvel
         '''

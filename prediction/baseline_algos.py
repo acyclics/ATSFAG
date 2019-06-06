@@ -93,8 +93,8 @@ def view_ppo2_mlp():
 
 def view_ppo2_mlplstm():
     env = gimbal(5, 500)
-    env = DummyVecEnv([lambda: gimbal(5, 500)])
-    model = PPO2.load("./models/baseline_ppo2_t6_dynamicR")
+    env = DummyVecEnv([lambda: gimbal(5, 1000)])
+    model = PPO2.load("./models/baseline_ppo2_t1_pred")
     success_rate = 0
     reward_avg = 0
     for episodes in range(50):
@@ -146,6 +146,6 @@ def train_her():
 
 
 def main():
-    train_ppo2_mlplstm()
+    view_ppo2_mlplstm()
 if __name__ == "__main__":
     main()
