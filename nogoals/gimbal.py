@@ -20,6 +20,8 @@ class gimbal:
         # Camera
         self.initCam1(500, 500)
         self.cam1 = [0, 0 ,0]
+        self.initCam2(500, 500)
+        self.cam2 = [0, 0 ,0]
         # Model specific
         self.frame_skip = frame_skip
         self.data = self.sim.data
@@ -42,6 +44,7 @@ class gimbal:
         low = -high
         self.observation_space = spaces.Box(low, high, dtype=np.float32)
         self.timestep = 0
+        self.totalTimeStep = 0
         self.MAX_timestep = MAX_timestep
         # Control specific
         self.integratedError0 = 0
@@ -53,8 +56,7 @@ class gimbal:
         # Dynamic randomization specific
         self.storeInitParams()
         # Annealing
-        self.gamma = 1.0
-        self.decay = 0.98
+        #self.decay = 0.98
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -88,6 +90,19 @@ class gimbal:
         cX = cX - (self.cam1_w/2.0)
         cY = (self.cam1_h/2.0) - cY
         norm_pt = [cX / (self.cam1_w/2), cY / (self.cam1_h/2)]
+        return norm_pt
+    def findPixel_centroid_cam2(self):
+        img = self.getCam2Data()
+        gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        thresh, blackAndWhiteImage = cv2.threshold(gray_image, 0, 230, cv2.THRESH_BINARY)
+        M = cv2.moments(blackAndWhiteImage)
+        if M["m00"] == 0 or M["m00"] == 0:
+            return [-self.cam2_w, 0]
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        cX = cX - (self.cam2_w/2.0)
+        cY = (self.cam2_h/2.0) - cY
+        norm_pt = [cX / (self.cam2_w/2), cY / (self.cam2_h/2)]
         return norm_pt
     def XZ_angle_posX(self):
         if self.XZ[1] == 0 and self.XZ[0] == 0:
@@ -159,17 +174,19 @@ class gimbal:
             action = [0, 0]
         self.do_simulation(action, self.frame_skip)
         self.timestep += 1
+        self.totalTimeStep += 1
         ob = self._get_obs()
         if self.timestep >= self.MAX_timestep:
             done = True
         return ob, reward, done, dict(goal=0)
     def reward_func(self, state, goal, goal_info):
         self.XZ = self.findPixel_centroid()
+        self.XZ_cam2 = self.findPixel_centroid_cam2()
         if isinstance(state, int):
             eps = 0.01
-            dist = np.linalg.norm(self.XZ)
-            if self.gamma != 0:
-                if self.XZ[0] == -self.cam1_w and self.XZ[1] == 0:
+            dist = np.linalg.norm(self.XZ_cam2)
+            if self.totalTimeStep <= 300000:
+                if self.XZ_cam2[0] == -self.cam2_w and self.XZ_cam2[1] == 0:
                     return True, -100000
                 elif dist <= eps:
                     return True, 0
@@ -185,7 +202,6 @@ class gimbal:
         self.viewer.cam.distance = 3.0
     def reset_model(self):
         self.timestep = 0
-        self.gamma *= self.decay
         qpos = self.init_qpos
         qvel = self.init_qvel
         '''
@@ -193,29 +209,23 @@ class gimbal:
         x: -0.50 to 0.68
         z: -0.50 to 0.68
         '''
-        qpos[-2] = np.random.uniform(low=-0.1, high=0.2)
-        qpos[-1] = np.random.uniform(low=-0.5, high=0.2)
-        qvel[-1] = np.random.uniform(low=-5, high=5)
-        qvel[-2] = np.random.uniform(low=0, high=3)
+        qpos[-2] = np.random.uniform(low=-0.1, high=0.5)
+        qpos[-1] = np.random.uniform(low=-0.5, high=0.5)
+        #qvel[-1] = np.random.uniform(low=-5, high=5)
+        #qvel[-2] = np.random.uniform(low=0, high=3)
         self.set_state(qpos, qvel)
         self.sim.data.qfrc_applied[-2] = self.sim.data.qfrc_bias[-2]    # no gravity for target
         #self.dRandomize()
         self.XZ = self.findPixel_centroid()
         return self._get_obs()
     def _get_obs(self):
-        #angular = [np.random.normal(self.sim.data.qvel[0], 0.005), np.random.normal(self.sim.data.qvel[1], 0.005)]  # noise
         angular = self.sim.data.qvel[0:2]
         dist = np.linalg.norm(self.XZ)
         XZ_angle = self.XZ_angle_posX()
-        vec_a = [-1 - self.XZ[0], 1 - self.XZ[1]]
-        vec_b = [1 - self.XZ[0], 1 - self.XZ[1]]
-        vec_c = [-1 - self.XZ[0], -1 - self.XZ[1]]
-        vec_d = [1 - self.XZ[0], -1 - self.XZ[1]]
         return np.concatenate([
             angular,
             self.XZ,
             [XZ_angle, dist]
-            #[XZ_angle, dist, np.linalg.norm(vec_a), np.linalg.norm(vec_b), np.linalg.norm(vec_c), np.linalg.norm(vec_d)]
         ])
     ''' END '''
 
@@ -241,6 +251,15 @@ class gimbal:
     def getCam1Data(self):
         self.cam1Viewer.render(self.cam1_w, self.cam1_h, self.cam1_id)
         data = self.cam1Viewer.read_pixels(self.cam1_w, self.cam1_h, depth=False)
+        return data[::-1, :, :]
+    def initCam2(self, WIDTH, HEIGHT):
+        self.cam2_w = WIDTH
+        self.cam2_h = HEIGHT
+        self.cam2_id = self.model.camera_name2id("cam2")
+        self.cam2Viewer = mjpy.MjRenderContextOffscreen(self.sim, self.cam2_id)
+    def getCam2Data(self):
+        self.cam2Viewer.render(self.cam2_w, self.cam2_h, self.cam2_id)
+        data = self.cam2Viewer.read_pixels(self.cam2_w, self.cam2_h, depth=False)
         return data[::-1, :, :]
     @property
     def dt(self):

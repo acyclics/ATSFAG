@@ -64,27 +64,27 @@ def train_ppo2_mlplstm():
     model.save("./models/baseline_ppo2_t6_dynamicR")
 
 def train_ppo2_mlp():
-    n_cpu = 6
+    n_cpu = 4
     env = SubprocVecEnv([lambda: gimbal(5, 500) for i in range(n_cpu)])
     model = PPO2(policy=MlpPolicy, env=env, gamma=0.99, n_steps=100, ent_coef=0.01, learning_rate=0.00025, 
                 vf_coef=0.5, max_grad_norm=0.5, lam=0.95, nminibatches=4, noptepochs=4, cliprange=0.2, 
                 verbose=1, tensorboard_log="./logs", _init_setup_model=True, policy_kwargs=None, full_tensorboard_log=False)
-    model.learn(total_timesteps=500000, callback=None, seed=None, log_interval=1, tb_log_name='PPO2', reset_num_timesteps=True)
-    model.save("./models/baseline_ppo2_t7_prune1")
+    model.learn(total_timesteps=1000000, callback=None, seed=None, log_interval=1, tb_log_name='PPO2', reset_num_timesteps=True)
+    model.save("./models/baseline_ppo2_t11_camshifted")
 
 def view_ppo2_mlp():
     env = gimbal(5, 500)
-    model = PPO2.load("./models/baseline_ppo2_t7_prune1")
+    model = PPO2.load("./models/baseline_ppo2_t10_camshifted")
     success_rate = 0
     reward_avg = 0
-    for episodes in range(50000):
+    for episodes in range(50):
         obs = env.reset()
         r = 0
         while True:
             action, _states = model.predict(obs)
             obs, rewards, dones, info = env.step(action)
             r += rewards
-            env.render()
+            #env.render()
             #env.target_ctrl()
             if dones:
                 if r > -100:
@@ -148,6 +148,6 @@ def train_her():
 
 
 def main():
-    view_ppo2_mlp()
+    train_ppo2_mlp()
 if __name__ == "__main__":
     main()

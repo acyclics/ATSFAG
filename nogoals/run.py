@@ -6,7 +6,7 @@ class test:
     def run(self):
         gm = gimbal(5, 500)
         obs = gm.reset()
-        action = [5, 0]
+        action = [5, -5]
         for _ in range(50000):
             gm.render()
             #action = np.random.uniform(low=-6.13, high=6.13, size=2)
