@@ -51,9 +51,6 @@ class gimbal:
         self.i0 = 0.1
         self.i1 = 0.1
         self.fired = False
-        # Tracking specific
-        self.track = PPO2.load("./models/baseline_ppo2_t7_prune1")
-        # Bullets specific
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -108,44 +105,15 @@ class gimbal:
             return np.pi + np.arctan(XZ[1] / XZ[0])
         elif XZ[0] > 0 and XZ[1] < 0:
             return 2.0 * np.pi + np.arctan(XZ[1] / XZ[0])
-    def get_track_obs(self, adjustment):
-        adjXZ = [self.XZ[0] + adjustment[0], self.XZ[1] + adjustment[1]]
-        angular = self.sim.data.qvel[0:2]
-        dist = np.linalg.norm(adjXZ)
-        XZ_angle = self.XZ_angle_posX(adjXZ)
-        return np.concatenate([
-            angular,
-            adjXZ,
-            [XZ_angle, dist]
-        ])
-    def tracking(self, adj):
-        obs = self.get_track_obs(adj)
-        action, state = self.track.predict(obs)
-        return action
-    def hit_adjusted_obs(self, a):
-        angular = self.sim.data.qvel[0:2]
-        hit_XZ = [self.XZ[0] + a[0], self.XZ[1] + a[1]]
-        dist = np.linalg.norm(hit_XZ)
-        XZ_angle = self.XZ_angle_posX(hit_XZ)
-        vec_a = [-1 - self.XZ[0], 1 - self.XZ[1]]
-        vec_b = [1 - self.XZ[0], 1 - self.XZ[1]]
-        vec_c = [-1 - self.XZ[0], -1 - self.XZ[1]]
-        vec_d = [1 - self.XZ[0], -1 - self.XZ[1]]
-        return np.concatenate([
-            angular,
-            self.XZ,
-            [XZ_angle, dist, np.linalg.norm(vec_a), np.linalg.norm(vec_b), np.linalg.norm(vec_c), np.linalg.norm(vec_d)]
-        ])
     def bullets_handle(self):
         if not self.fired:
-            #bullet_pos = self.get_body_com("bullet_pos")[0:3]
-            self.sim.data.qpos[-5:-2] = [0, 0, 0.17]
+            self.sim.data.qpos[-5:-2] = [0, -0.0045, 0.17]
+            vec = self.get_body_com("head_of_barrel") - [0, -0.0045, 0.17]
+            self.sim.data.qvel[-5:-2] = vec * 500.0
             self.fired = True
         else:
-            if self.get_body_com("bullet")[2] < -0.2:
+            if self.data.sensordata[2] != 0 or self.get_body_com("bullet")[2] < -0.2 or self.get_body_com("bullet")[2] > 0.6 or abs(self.get_body_com("bullet")[0]) > 0.6:
                 self.fired = False
-    def set_fric_speed(self, speed):
-        self.sim.data.ctrl[2:4] = [speed, speed]
     ''' END '''
 
 
@@ -154,11 +122,8 @@ class gimbal:
     ''' Model upper-level '''
     def step(self, a):
         done, reward = self.reward_func(0, 0, 0)
-        a = [a[0] / 20, a[1] / 20]
-        adjusted_model_action = self.tracking(a)
-        action = self.pid_control(adjusted_model_action)
+        action = self.pid_control(a)
         self.bullets_handle()
-        self.set_fric_speed(20)
         self.do_simulation(action, self.frame_skip)
         self.timestep += 1
         ob = self._get_obs()
@@ -190,16 +155,18 @@ class gimbal:
         Bullet
         self.sim.data.qpos[-7, -8, -9] = ZYX
         '''
-        qpos[-2] = np.random.uniform(low=-0.1, high=0.4)
-        qpos[-1] = np.random.uniform(low=-0.4, high=0.4)
+        qpos[-2] = 0.5#np.random.uniform(low=-0.1, high=0.4)
+        qpos[-1] = 0.5#np.random.uniform(low=-0.4, high=0.4)
         #qvel[-1] = np.random.uniform(low=-5, high=5)
         #qvel[-2] = np.random.uniform(low=0, high=5)
         self.set_state(qpos, qvel)
         self.sim.data.qfrc_applied[-2] = self.sim.data.qfrc_bias[-2]    # no gravity for target
         self.XZ = self.findPixel_centroid()
+        '''
         for _ in range(550):
             self.sim.data.ctrl[:] = [0, 0, 20, 20]
             self.sim.step()
+            '''
         return self._get_obs()
     def _get_obs(self):
         angular = self.sim.data.qvel[0:2]

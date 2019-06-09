@@ -6,6 +6,8 @@ from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines.ddpg.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise, AdaptiveParamNoiseSpec
 from stable_baselines.gail import ExpertDataset, generate_expert_traj
 from stable_baselines import DDPG, PPO2, GAIL
+import os
+import tensorflow as tf
 
 # DDPG
 def train_ddpg():
@@ -74,7 +76,9 @@ def train_ppo2_mlp():
 
 def view_ppo2_mlp():
     env = gimbal(5, 500)
-    model = PPO2.load("./models/baseline_ppo2_t10_camshifted")
+    env = DummyVecEnv([lambda: gimbal(5, 500)])
+    model = PPO2.load("./models/baseline_ppo2_t7_prune1", env=env)
+
     success_rate = 0
     reward_avg = 0
     for episodes in range(50):
@@ -92,7 +96,6 @@ def view_ppo2_mlp():
                     reward_avg += r
                 break
     print("Success rate: ", success_rate, "Avg rewards: ", (reward_avg / success_rate))
-
 def view_ppo2_mlplstm():
     env = gimbal(5, 500)
     env = DummyVecEnv([lambda: gimbal(5, 500)])
@@ -147,7 +150,21 @@ def train_her():
 
 
 
+# UTILS
+def generate_checkpoint_from_model(model_path, checkpoint_name):
+    model = PPO2.load(model_path)
+
+    with model.graph.as_default():
+        #if os.path.exists(checkpoint_name):
+        #    shutil.rmtree(checkpoint_name)
+        print(model.act_model.action.name)
+        #tf.saved_model.simple_save(model.sess, checkpoint_name, inputs={"obs": model.act_model.obs_ph},
+        #                           outputs={"action": model.act_model.action})
+# UTILS
+
+
+
 def main():
-    train_ppo2_mlp()
+    generate_checkpoint_from_model("./models/baseline_ppo2_t7_prune1", "./models/tf_ppo2_prune1_3")
 if __name__ == "__main__":
     main()
