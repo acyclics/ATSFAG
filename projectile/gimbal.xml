@@ -80,9 +80,6 @@
             <joint type="slide" pos="0 0 0" axis="1 0 0"/>
             <joint type="slide" pos="0 0 0" axis="0 1 0"/>
             <joint type="slide" pos="0 0 0" axis="0 0 1"/>
-            <!--joint type="slide" pos="0 0 0" axis="1 0 1"/>
-            <joint type="slide" pos="0 0 0" axis="0 1 1"/>
-            <joint type="slide" pos="0 0 0" axis="0 0 1"/-->
         </body>
 
         <body name="target" pos="0 1 0.1">
@@ -97,8 +94,6 @@
     <actuator>
         <velocity joint="motor1" gear="1" forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-20 20"/>
         <velocity joint="motor2" gear="1" forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-10 10"/>
-        <!--velocity joint="lFricWheel" gear="1" forcelimited="true" forcerange="399 400" ctrllimited="true" ctrlrange="0 20"/-->
-        <!--velocity joint="rFricWheel" gear="1" forcelimited="true" forcerange="-400 -399" ctrllimited="true" ctrlrange="0 20"/-->
     </actuator>
 
     <sensor>

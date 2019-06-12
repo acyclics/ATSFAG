@@ -5,7 +5,7 @@ from stable_baselines.common.policies import MlpPolicy, MlpLstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines.ddpg.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise, AdaptiveParamNoiseSpec
 from stable_baselines.gail import ExpertDataset, generate_expert_traj
-from stable_baselines import DDPG, PPO2, GAIL
+from stable_baselines import DDPG, PPO2, GAIL, HER
 
 # DDPG
 def train_ddpg():
@@ -133,19 +133,20 @@ def train_gail_withppo2():
 
 # HER
 def train_her():
-    env = gimbal(5, 500)
+    env = gimbal(5, 1000)
     n_sampled_goal = 4
-    model = HER('MlpPolicy', env, SAC, n_sampled_goal=n_sampled_goal,
+    model = HER('MlpPolicy', env, PPO2, n_sampled_goal=n_sampled_goal,
             goal_selection_strategy='future',
             verbose=1, buffer_size=int(1e6),
             learning_rate=1e-3,
-            gamma=0.95, batch_size=256,
-            policy_kwargs=dict(layers=[256, 256, 256]))
+            gamma=0.95, batch_size=256)
+    model.learn(500000)
+    model.save("./models/baseline_herppo2_t3_proj")
 # HER
 
 
 
 def main():
-    view_ppo2_mlp()
+    train_her()
 if __name__ == "__main__":
     main()
