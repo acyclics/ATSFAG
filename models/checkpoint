@@ -1,2 +1,0 @@
-model_checkpoint_path: "gimbal_nogoals_0505_t5.ckpt"
-all_model_checkpoint_paths: "gimbal_nogoals_0505_t5.ckpt"

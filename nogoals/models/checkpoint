@@ -1,2 +1,0 @@
-model_checkpoint_path: "tf_ppo2_prune1.ckpt"
-all_model_checkpoint_paths: "tf_ppo2_prune1.ckpt"
